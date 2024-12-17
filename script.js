@@ -1,8 +1,9 @@
 const shelves = [
-    { id: 1, name: "Prateleira A1", capacity: 100, pesoAtual: 0 },
+
+
+    
 ];
 
-// Função para determinar a cor da barra de progresso
 function getProgressBarColor(usagePercentage) {
     if (usagePercentage >= 0 && usagePercentage <= 30) {
         return 'red'; // Vermelho para 0-30%
@@ -13,11 +14,10 @@ function getProgressBarColor(usagePercentage) {
     }
 }
 
-// Função para criar um card de prateleira
 function createShelfCard(shelf) {
-    
-
-    const usagePercentage = (shelf.pesoAtual / shelf.capacity) * 100;
+    const pesoAtual = shelf.pesoAtual || 0;
+    const capacity = shelf.capacidade || 1; // Evitar divisão por zero
+    const usagePercentage = shelf.porcentagem || 0;
     const progressBarColor = getProgressBarColor(usagePercentage);
 
     const card = document.createElement('div');
@@ -25,17 +25,17 @@ function createShelfCard(shelf) {
 
     card.innerHTML = `
         <div class="shelf-header">
-            <h2>${shelf.name}</h2>
+            <h2>${shelf.nome}</h2>
         </div>
         <div class="shelf-content">
             <div class="shelf-info">
                 <div>
                     <span>Capacidade:</span>
-                    <span>${shelf.capacity} itens</span>
+                    <span>${capacity}</span>
                 </div>
                 <div>
                     <span>Em uso:</span>
-                    <span id="peso-atual-${shelf.id}">${shelf.pesoAtual} itens</span>
+                    <span id="peso-atual-${shelf.id}">${pesoAtual} kg</span>
                 </div>
             </div>
             <div class="progress-bar">
@@ -44,7 +44,7 @@ function createShelfCard(shelf) {
                 </div>
             </div>
             <div class="usage-text">
-                ${usagePercentage.toFixed(1)}% utilizado
+                ${usagePercentage}% utilizado
             </div>
         </div>
     `;
@@ -52,35 +52,34 @@ function createShelfCard(shelf) {
     return card;
 }
 
-// Função para renderizar todas as prateleiras
 function renderShelves() {
-    const container = document.getElementById('shelvesContainer');
+    const container = document.getElementById('shelves-container');
     container.innerHTML = '';
     shelves.forEach(shelf => {
         container.appendChild(createShelfCard(shelf));
     });
 }
 
-// Função para atualizar o peso atual de uma prateleira específica
 function atualizarPesoAtual() {
-    
-   
-    const pesoAtualRef = database.ref("Prateleira/pesoAtual");
+    const shelvesRef = database.ref("Prateleira");
 
-    // Lendo os dados do Firebase
-    pesoAtualRef.on("value", (snapshot) => {
+    shelvesRef.on("value", (snapshot) => {
         const data = snapshot.val();
-        console.log("Peso atual recebido do Firebase:", pesoAtual);
+        console.log("Dados recebidos do Firebase:", data);
         
         if (data) {
-            // Atualiza o peso das prateleiras no array de shelves
-            shelves.forEach(shelf => {
-                if (data[`pesoAtual-${shelf.id}`]) {
-                    shelf.pesoAtual = data[`pesoAtual-${shelf.id}`];
+            shelves.length = 0; // Clear existing shelves array
+            for (const id in data) {
+                if (data.hasOwnProperty(id)) {
+                    shelves.push({
+                        id: id,
+                        nome: data[id].nome || `Prateleira ${id}`,
+                        pesoAtual: data[id].pesoAtual || 0,
+                        capacidade: data[id].capacidade || '1kg',
+                        porcentagem: data[id].porcentagem || 0
+                    });
                 }
-            });
-
-            // Re-renderiza as prateleiras com os novos dados
+            }
             renderShelves();
         }
     }, (error) => {
@@ -88,23 +87,19 @@ function atualizarPesoAtual() {
     });
 }
 
-// Inicializar o dashboard e carregar dados ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
-    renderShelves();
     atualizarPesoAtual();
 });
 
-
-const database = firebase.Prateleira();
-const app = firebase.initializeApp(firebaseConfig);
-
-
 const firebaseConfig = {
-  apiKey: "AIzaSyApF1lrZDydzkoAyc3jtudDxdlGTysON2Q",
-  authDomain: "esp32-6fe25.firebaseapp.com",
-  databaseURL: "https://esp32-6fe25-default-rtdb.firebaseio.com",
-  projectId: "esp32-6fe25",
-  storageBucket: "esp32-6fe25.firebasestorage.app",
-  messagingSenderId: "357944367709",
-  appId: "1:357944367709:web:6ad04ad636cc4c97b94bb4"
-}
+    apiKey: "AIzaSyApF1lrZDydzkoAyc3jtudDxdlGTysON2Q",
+    authDomain: "esp32-6fe25.firebaseapp.com",
+    databaseURL: "https://esp32-6fe25-default-rtdb.firebaseio.com",
+    projectId: "esp32-6fe25",
+    storageBucket: "esp32-6fe25.firebasestorage.app",
+    messagingSenderId: "357944367709",
+    appId: "1:357944367709:web:6ad04ad636cc4c97b94bb4"
+};
+ 
+const app = firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
